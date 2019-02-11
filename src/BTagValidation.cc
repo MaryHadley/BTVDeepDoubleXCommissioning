@@ -661,6 +661,7 @@ BTagValidation::BTagValidation(const edm::ParameterSet& iConfig) :
   if(produceDDCvBSFtemplates_) std::cout << "ATTENTION   : Creating DDCvB SF templates (JP plots)." << std::endl;
   if(produceDDCvBSFtemplates_SVmass_) std::cout << "ATTENTION : Creating DDCvB SF templates (SV mass plots)." << std:: endl;
   if(produceDDCvBSFtemplates_JPhasSV_) std::cout << "ATTENTION : Creating DDCvB SF templates (JPhasSV plots)." << std::endl;
+  if(produceDDCvBSFtemplates_JPnoSV_)  std::cout << "ATTENTION: Creating DDCvB SF templates (JPnoSV plots)." << std::endl;
 // Pt bins for SFb
   double PtBins[] = {20, 30, 40, 50, 60, 70, 80, 100, 120, 160, 210, 260, 320, 400, 500, 600, 800};
 
