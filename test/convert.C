@@ -3,7 +3,7 @@
 #include "TH1F.h"
 
 bool DEBUG = true;
-bool DEBUG_pretag = true;
+bool DEBUG_pretag = false;
 bool DEBUG_tag = false;
 bool DEBUG_untag = false;
 bool DEBUG_rebin = false;
@@ -23,10 +23,6 @@ void convert(std::vector<TString> fin, std::vector<TString> fout, std::vector<st
    
    Float_t kScale = kScales[6];
 
-   TFile *f;
-   TString fout_;
-   TFile *fNew;
-
    float int_total;
    std::vector<float> int_total_SYSup;
    std::vector<float> int_total_SYSdown;
@@ -41,48 +37,52 @@ void convert(std::vector<TString> fin, std::vector<TString> fout, std::vector<st
    
    for(int ifile=0; ifile<fin.size();ifile++){
 
+	   TFile *f;
+	   TString fout_;
+	   TFile *fNew;
+
  	   std::cout << "" << std::endl; 
 	   std::cout << "Processing to convert double-Mu-tag file ... " << fin.at(ifile) << std::endl; 
 	      
 	   f = TFile::Open(fin.at(ifile));
-	   fout_ = fout.at(ifile)+"_DoubleB"+WP+kScaleStr+".root";
+	   fout_ = fout.at(ifile)+"_DoubleB"+WP+kScaleStr+".root"; //Mary changed this from _DoubleB to _DeepDoubleX
 	   fNew = TFile::Open(fout_,"RECREATE");
 	   std::cout<< "Creating file: "<< fout_ << std::endl;
 
 	   std::string tag; 
-	   tag = "DoubleB"+WP;
+	   tag = "DoubleB"+WP; //was DoubleB, has to match what your branch name is
    
 	   std::string var = varName.at(ifile);
 
 	//    TString QCDlabel = "QCD";   
-	   std::string QCDlabel = "QCDMuEnr";
+	   std::string QCDlabel = "QCDMu+"; //has to match what you called QCD in your campaigns (aka Data, QCDMu+)
 
-	   const int npt = 17;
-	   std::string ptt[npt] = {"pt250to300",
-								"pt300to350",
-								"pt350to400",
-								"pt400to450",
-								"pt450to500",
-								"pt400to470",
-								"pt470to2000",
-								"pt350to430",
+	   const int npt = 2; //was 250to300 as the first thing //was 300to350 as the second thing was npt=17
+	   std::string ptt[npt] = {"pt350to430",
 								"pt430to2000",
-								"pt250to350",
-								"pt350to450",
-								"pt300to400",
-								"pt400to500",
-								"pt500to600",
-								"pt600to2000",
-								"pt500to2000",
-								"pt450to2000",
+								// "pt350to400",
+// 								"pt400to450",
+// 								"pt450to500",
+// 								"pt400to470",
+// 								"pt470to2000",
+// 								"pt350to430",
+// 								"pt430to2000",
+// 								"pt250to350",
+// 								"pt350to450",
+// 								"pt300to400",
+// 								"pt400to500",
+// 								"pt500to600",
+// 								"pt600to2000",
+// 								"pt500to2000",
+// 								"pt450to2000",
 								};
 	  
 
-	   const int nSys = 7;
-	  std::string sysName[nSys] = {"JES","NTRACKS","BFRAG","CFRAG","CD","K0L","PU"};
+	   //const int nSys = 7;
+	   //std::string sysName[nSys] = {"JES","NTRACKS","BFRAG","CFRAG","CD","K0L","PU"};
 
-	//    const int nSys=0;
-	//    std::string sysName[nSys];
+ 	   const int nSys=0;
+ 	   std::string sysName[nSys]; //Mary changed 8 Jan. 2018 because I don't have systematics right now
 
 
 	   for(int i=0;i<npt;i++)
@@ -91,15 +91,13 @@ void convert(std::vector<TString> fin, std::vector<TString> fout, std::vector<st
 	
 		// data
 		std::string hname_data = "UNWEIGHTED__DATA__FatJet_"+var+"_all_"+pt+"_data";
-		std::string hname_data_tag = "UNWEIGHTED__DATA__FatJet_"+var+"_"+tag+"pass_"+pt+"_data";
-		std::string hname_data_untag = "UNWEIGHTED__DATA__FatJet_"+var+"_"+tag+"fail_"+pt+"_data";
+		std::string hname_data_tag = "UNWEIGHTED__DATA__FatJet_"+var+"_"+tag+"_pass_"+pt+"_data";
+		std::string hname_data_untag = "UNWEIGHTED__DATA__FatJet_"+var+"_"+tag+"_fail_"+pt+"_data";
 		if(DEBUG)std::cout<< "attempt get data histograms "<< var << ", "<<tag <<", pt = "<<pt<< std::endl;
-		if(DEBUG)std::cout<< hname_data << "XXX" <<std::endl;	
 		TH1F *h_data = (TH1F*)f->Get(hname_data.c_str());
 		TH1F *h_data_tag = (TH1F*)f->Get(hname_data_tag.c_str());
 		TH1F *h_data_untag = (TH1F*)f->Get(hname_data_untag.c_str());
 		if(DEBUG)std::cout<< "got data histograms."<<std::endl;	
-		if(DEBUG)std::cout<< h_data <<std::endl;	
 		float int_data = h_data->Integral(0,h_data->GetXaxis()->GetNbins()+1);
 		float int_data_tag = h_data_tag->Integral(0,h_data_tag->GetXaxis()->GetNbins()+1);
 		float int_data_untag = h_data_untag->Integral(0,h_data_untag->GetXaxis()->GetNbins()+1);
@@ -356,11 +354,11 @@ void convert(std::vector<TString> fin, std::vector<TString> fout, std::vector<st
 		if(i==8 && DEBUG_tag)std::cout << "----------------------------------------" << std::endl;
 		if(i==8 && DEBUG_tag)std::cout << "TAG - " << pt <<std::endl;
 		if(i==8 && DEBUG_tag)std::cout << "----------------------------------------" << std::endl;
-		std::string hname_bfromg_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"pass_"+pt+"_bfromg";
-		std::string hname_b_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"pass_"+pt+"_b";
-		std::string hname_cfromg_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"pass_"+pt+"_cfromg";
-		std::string hname_c_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"pass_"+pt+"_c";
-		std::string hname_l_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"pass_"+pt+"_l";
+		std::string hname_bfromg_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_pass_"+pt+"_bfromg";
+		std::string hname_b_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_pass_"+pt+"_b";
+		std::string hname_cfromg_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_pass_"+pt+"_cfromg";
+		std::string hname_c_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_pass_"+pt+"_c";
+		std::string hname_l_tag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_pass_"+pt+"_l";
 	
 		TH1F *h_bfromg_tag = (TH1F*)f->Get(hname_bfromg_tag.c_str());	
 		if(i==8 && DEBUG_tag)std::cout << "" << std::endl;
@@ -585,11 +583,11 @@ void convert(std::vector<TString> fin, std::vector<TString> fout, std::vector<st
 		if(i==8 && DEBUG_untag)std::cout << "----------------------------------------" << std::endl;
 		if(i==8 && DEBUG_untag)std::cout << "UNTAG - " << pt <<std::endl;
 		if(i==8 && DEBUG_untag)std::cout << "----------------------------------------" << std::endl;
-		std::string hname_bfromg_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"fail_"+pt+"_bfromg";
-		std::string hname_b_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"fail_"+pt+"_b";
-		std::string hname_cfromg_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"fail_"+pt+"_cfromg";
-		std::string hname_c_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"fail_"+pt+"_c";
-		std::string hname_l_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"fail_"+pt+"_l";
+		std::string hname_bfromg_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_fail_"+pt+"_bfromg";
+		std::string hname_b_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_fail_"+pt+"_b";
+		std::string hname_cfromg_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_fail_"+pt+"_cfromg";
+		std::string hname_c_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_fail_"+pt+"_c";
+		std::string hname_l_untag = "UNWEIGHTED__"+QCDlabel+"__FatJet_"+var+"_"+tag+"_fail_"+pt+"_l";
 	
 		TH1F *h_bfromg_untag = (TH1F*)f->Get(hname_bfromg_untag.c_str());
 		if(i==8 && DEBUG_untag)std::cout << "" << std::endl;
@@ -1142,44 +1140,15 @@ void convert(std::vector<TString> fin, std::vector<TString> fout, std::vector<st
 }
 
 void convert(){
-// 	TString date = "Apr24-2018_testing_Mar15file/"; //fixed normalization v2, post,untag take norm from pre
-// 	TString date = "Apr24-2018_testing_Apr3file/"; //fixed normalization v2, post,untag take norm from pre
-// 	TString date = "Apr27-2018_reprocess_Mar15file_Apr3file_combined/"; //fixed normalization v3, post,untag of JPhas,JPnoSV,SVmass take norm from pre of JP.
-	TString date = "Apr30-2018_reprocess_Mar15file_Apr3file_combined_v2/"; //fixed normalization v4, post,untag of JPhas,JPnoSV,SVmass take norm from pre of JP.
+	TString date = "5March2019"; //dataJPcalib with ALl sys copied. SVmass=JPhasSV. fixed normalization v4, post,untag of JPhas,JPnoSV,SVmass take norm from pre of JP.
 	system("mkdir -vp SFtemplates/"+date);
 
-// 	TString fin;
-// 	std::string fout;
-// 	std::string kScaleStr;
 
 	std::vector<TString> fin;
 	std::vector<TString> fout;
 	std::vector<std::string> varName;
 	std::string kScaleStr;
 
-//Apr3-2018 _dataUseMCJPcalib =============================
-/*
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPhasSV_ptReweighted_dataUseMCJPcalib_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPhasSV_ptReweighted_dataUseMCJPcalib_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted_dataUseMCJPcalib_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted_dataUseMCJPcalib_SysMerged_SFtemplates";
 // 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
 // 	
 // 	{
@@ -1192,487 +1161,173 @@ void convert(){
 // 	}
 // 		
 // 	}
+//*/ //might need this later
 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPnoSV_ptReweighted_dataUseMCJPcalib_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPnoSV_ptReweighted_dataUseMCJPcalib_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted_dataUseMCJPcalib_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted_dataUseMCJPcalib_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-
-
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_SVmass_ptReweighted_dataUseMCJPcalib_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_SVmass_ptReweighted_dataUseMCJPcalib_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted_dataUseMCJPcalib_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted_dataUseMCJPcalib_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-*/
-
-//Apr3-2018 =============================
-/*
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPhasSV_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPhasSV_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPnoSV_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPnoSV_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_SVmass_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_SVmass_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-*/
-
-
-//Mar27-2018 =============================
-/*
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPhasSV_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPhasSV_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPnoSV_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPnoSV_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-
-
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_SVmass_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_SVmass_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-*/
-
-//Mar22-2018 per era =============================
-/*
-
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017EF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017EF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017EF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017EF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-// 
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017CDE_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017CDE_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017CDE_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017CDE_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-// 
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017B_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017B_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017B_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017B_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-*/
-
-//Mar15-2018 =============================
-/*
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 	
-// 	}
-// 
-// 	{
-// 
-// 	fin = "/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged.root";
-// 	fout = "SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged_SFtemplates";
-// 	std::cout << "Processing to convert double-Mu-tag file ... " << fin << std::endl; 
-// 	
-// 	{
-// 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
-// 	kScaleStr = "";
-// 	convert(fin,fout,"H",kScales,kScaleStr);
-// 	convert(fin,fout,"M1",kScales,kScaleStr);
-// 	convert(fin,fout,"M2",kScales,kScaleStr);
-// 	convert(fin,fout,"L",kScales,kScaleStr);
-// 	}
-// 		
-// 	}
-*/
 
 
 	std::cout << "================"<< std::endl;
-	std::cout << "Processing 350" << std::endl;
+	std::cout << "Processing 250" << std::endl;
 	std::cout << "================"<< std::endl;
+//changed this to 250 from 350	
+	TString dataJPcalib = "_dataUseMCJPcalib";
+	//TString dataJPcalib = "";
 	
-	fin.push_back("/.automount/home/home__home1/institut_3a/novak/btag/CMSSW_9_4_13/src/RecoBTag/BTagValidation/test/results/plots_final/Run2017_QCDMuEnriched_DoubleMuonTaggedFatJets_histograms_btagval.root");
-	fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged_SFtemplates");
+	fin.push_back("/afs/cern.ch/work/m/mhadley/public/clean_March_2019_updated_version_of_DeepDoubleX/CMSSW_9_4_13/src/RecoBTag/BTagValidation/test/Final_histograms_sysMerged.root");
+	fout.push_back("SFtemplates/"+date+"/MaryTestOfAndrzejFile_Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v3_ptReweighted_SysMerged_SFtemplates");
 	varName.push_back("JP"); //JP must always be first. (Because all histo scaling is based on JP pre tag histos)
 
-	// fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPhasSV_ptReweighted_SysMerged.root");
-	// fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPhasSV_ptReweighted_SysMerged_SFtemplates");
-	// varName.push_back("JPhasSV");
-
-	// fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPnoSV_ptReweighted_SysMerged.root");
-	// fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_JPnoSV_ptReweighted_SysMerged_SFtemplates");
-	// varName.push_back("JPnoSV");
-
-	// fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_SVmass_ptReweighted_SysMerged.root");
-	// fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK8Jet300orAK4Jet300_Pt350_Final_DoubleMuonTaggedFatJets_histograms_btagval_v4_SVmass_ptReweighted_SysMerged_SFtemplates");
-	// varName.push_back("tau1VertexMassCorr");
+       //  fin.push_back("/afs/cern.ch/work/m/mhadley/public/for_DoubleBGroup/Final_histograms_sysMerged_PtRange250to350_jpHASsv.root");
+// 	fout.push_back("SFtemplates/"+date+"/JPhasSV_PtRangeIs250to350"+dataJPcalib +"_SysMerged_SFtemplates");
+//  	varName.push_back("JPhasSV"); 
+// // 
+//  	fin.push_back("/afs/cern.ch/work/m/mhadley/public/for_DoubleBGroup/Final_histograms_sysMerged_PtRange250to350_jpHasNOsv.root");
+//  	fout.push_back("SFtemplates/"+date+"/JPhasNOSV_PtRangeIs250to350"+dataJPcalib +"_SysMerged_SFtemplates");
+//  	varName.push_back("JPnoSV");
+// // 
+//  	fin.push_back("/afs/cern.ch/work/m/mhadley/public/for_DoubleBGroup/Final_histograms_sysMerged_PtRange250to350_SVmass.root");
+//  	fout.push_back("SFtemplates/"+date+"/SVmass_PtMinRangeIs250to350"+dataJPcalib+"_SysMerged_SFtemplates");
+//  	varName.push_back("tau1VertexMassCorr");
 
 	{
 	double kScales[7] = {1.,1.,1.,1.,1.,1.,1.}; //nominal
 	kScaleStr = "";
-	// convert(fin,fout,varName,"H",kScales,kScaleStr);
-	convert(fin,fout,varName,"M1",kScales,kScaleStr);
-	convert(fin,fout,varName,"M2",kScales,kScaleStr);
-	convert(fin,fout,varName,"L",kScales,kScaleStr);
-	}
-
-	fin.clear();
-	fout.clear();
-	varName.clear();
-
+	convert(fin,fout,varName,"_T",kScales,kScaleStr);
+	
+	 convert(fin,fout,varName,"_M1",kScales,kScaleStr);
+ 	convert(fin,fout,varName,"_M2",kScales,kScaleStr);
+ 	convert(fin,fout,varName,"_L",kScales,kScaleStr);
+ 	}
+// 
+// 	{
+// 	double kScales[7] = {1.5,1.,1.,1.,1.,1.,1.};
+// 	kScaleStr = "_b_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.5,1.,1.,1.,1.,1.}; 
+// 	kScaleStr = "_cfromg_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.5,1.,1.,1.,1.}; 
+// 	kScaleStr = "_c_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.5,1.,1.,1.}; 
+// 	kScaleStr = "_l_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.,1.5,1.,1.}; 
+// 	kScaleStr = "_b_cfromg_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.,1.,1.5,1.}; 
+// 	kScaleStr = "_c_l_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {.5,1.,1.,1.,1.,1.,1.}; 
+// 	kScaleStr = "_b_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,.5,1.,1.,1.,1.,1.}; 
+// 	kScaleStr = "_cfromg_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,.5,1.,1.,1.,1.}; 
+// 	kScaleStr = "_c_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,.5,1.,1.,1.}; 
+// 	kScaleStr = "_l_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.,.5,1.,1.}; 
+// 	kScaleStr = "_b_cfromg_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.,1.,.5,1.}; 
+// 	kScaleStr = "_c_l_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	fin.clear();
+// 	fout.clear();
+// 	varName.clear();
+// 
 // 	std::cout << "================"<< std::endl;
 // 	std::cout << "Processing 250" << std::endl;
 // 	std::cout << "================"<< std::endl;
 // 
-// 	fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged.root");
-// 	fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted_SysMerged_SFtemplates");
+// 	fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted"+dataJPcalib+"_SysMerged.root");
+// 	fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v3_ptReweighted"+dataJPcalib+"_SysMerged_SFtemplates");
 // 	varName.push_back("JP"); //JP must always be first. (Because all histo scaling is based on JP pre tag histos)
 // 
-// 	fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted_SysMerged.root");
-// 	fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted_SysMerged_SFtemplates");
+// 	fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted"+dataJPcalib+"_SysMerged.root");
+// 	fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPhasSV_ptReweighted"+dataJPcalib+"_SysMerged_SFtemplates");
 // 	varName.push_back("JPhasSV");
 // 
-// 	fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted_SysMerged.root");
-// 	fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted_SysMerged_SFtemplates");
+// 	fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted"+dataJPcalib+"_SysMerged.root");
+// 	fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_JPnoSV_ptReweighted"+dataJPcalib+"_SysMerged_SFtemplates");
 // 	varName.push_back("JPnoSV");
 // 
-// 	fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted_SysMerged.root");
-// 	fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted_SysMerged_SFtemplates");
+// 	fin.push_back("/afs/cern.ch/user/r/rsyarif/workHere/HbbTagVal/Jan10-2018_CommSF_v1/CMSSW_9_4_1/src/RecoBTag/BTagValidation/BTV/results/plots_final/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted"+dataJPcalib+"_SysMerged.root");
+// 	fout.push_back("SFtemplates/"+date+"/Run2017BCDEF_ReReco_QCDMuonEnriched_AK4DiJet170_Pt250_Final_DoubleMuonTaggedFatJets_histograms_btagval_v1_v4_SVmass_ptReweighted"+dataJPcalib+"_SysMerged_SFtemplates");
 // 	varName.push_back("tau1VertexMassCorr");
 // 
 // 	{
@@ -1683,6 +1338,113 @@ void convert(){
 // 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
 // 	convert(fin,fout,varName,"L",kScales,kScaleStr);
 // 	}
+// 
+// 	{
+// 	double kScales[7] = {1.5,1.,1.,1.,1.,1.,1.};
+// 	kScaleStr = "_b_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.5,1.,1.,1.,1.,1.}; 
+// 	kScaleStr = "_cfromg_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.5,1.,1.,1.,1.}; 
+// 	kScaleStr = "_c_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.5,1.,1.,1.}; 
+// 	kScaleStr = "_l_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.,1.5,1.,1.}; 
+// 	kScaleStr = "_b_cfromg_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.,1.,1.5,1.}; 
+// 	kScaleStr = "_c_l_1p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {.5,1.,1.,1.,1.,1.,1.}; 
+// 	kScaleStr = "_b_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,.5,1.,1.,1.,1.,1.}; 
+// 	kScaleStr = "_cfromg_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,.5,1.,1.,1.,1.}; 
+// 	kScaleStr = "_c_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,.5,1.,1.,1.}; 
+// 	kScaleStr = "_l_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.,.5,1.,1.}; 
+// 	kScaleStr = "_b_cfromg_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"L",kScales,kScaleStr);
+// 	}
+// 
+// 	{
+// 	double kScales[7] = {1.,1.,1.,1.,1.,.5,1.}; 
+// 	kScaleStr = "_c_l_0p5";
+// 	convert(fin,fout,varName,"H",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M1",kScales,kScaleStr);
+// 	convert(fin,fout,varName,"M2",kScales,kScaleStr);
+//	}
 
 
 	std::cout << "Done. " << std::endl; 
